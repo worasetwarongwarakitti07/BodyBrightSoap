@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BodyBright — สบู่ก้อนพรีเมียม กลิ่น Sport & Peach</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">BodyBright</a>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">หน้าแรก</a></li>
+<li><a href="product.html" >สินค้า (SKUs)</a></li>
+<li><a href="order.html" >สั่งซื้อ <span class="cart-badge">0</span></a></li>
+<li><a href="warehouse/pick-pack.html" >แพ็ค & จ่าหน้าพัสดุ</a></li>
+<li><a href="admin.html" >หลังบ้าน (Admin)</a></li>
+
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <span class="hero-badge">NEW COLLECTION • NATURAL CARE</span>
+      <h1>ปลุกความสดชื่น เผยผิวไบรท์ใส<br>อย่างมั่นใจในทุกวันของคุณ</h1>
+      <p>สัมผัสประสบการณ์การอาบน้ำที่เหนือระดับด้วยสบู่ก้อน BodyBright 2 สูตรเอกลักษณ์ ทั้งความเย็นสดชื่นแนว Sport และความหอมหวานละมุนจาก Peach</p>
+      <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+        <a href="product.html" class="btn btn-primary">เลือกดูสินค้าทั้งหมด (10 SKUs)</a>
+        <a href="order.html" class="btn btn-outline">ไปที่หน้าสั่งซื้อ</a>
+      </div>
+    </section>
+
+    <h2 class="section-title">2 กลิ่นซิกเนเจอร์ของ BodyBright</h2>
+    <p class="section-subtitle">เลือกสไตล์ความหอมที่ใช่สำหรับคุณ มีให้เลือกทั้งขนาดพกพา 60 กรัม และขนาดจุใจ 130 กรัม</p>
+
+    <div class="scents-grid">
+      <div class="scent-card">
+        <img src="assets/sport.jpg" alt="BodyBright กลิ่น Sport">
+        <div class="scent-body">
+          <div>
+            <span class="scent-tag tag-sport">COOL & REFRESHING</span>
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem;">กลิ่น Sport</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              สัมผัสความเย็นสบายและสดชื่นกระปรี้กระเปร่า พร้อมกลิ่นหอมสะอาดแนวสปอร์ตที่ช่วยปลุกพลังและขจัดความเหนื่อยล้าให้หมดไป
+            </p>
+          </div>
+          <a href="product.html?scent=Sport" class="btn btn-sport" style="width: 100%;">ดูสินค้ากลิ่น Sport</a>
+        </div>
+      </div>
+
+      <div class="scent-card">
+        <img src="assets/peach.jpg" alt="BodyBright กลิ่น Peach">
+        <div class="scent-body">
+          <div>
+            <span class="scent-tag tag-peach">SWEET & GENTLE</span>
+            <h3 style="font-size: 1.4rem; margin-bottom: 0.5rem;">กลิ่น Peach</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+              ดื่มด่ำกับกลิ่นหอมหวานละมุนชวนหลงใหลของลูกพีชสุก มอบความรู้สึกสดใส น่ารัก และอ่อนโยนต่อผิวคุณผู้หญิง
+            </p>
+          </div>
+          <a href="product.html?scent=Peach" class="btn btn-peach" style="width: 100%;">ดูสินค้ากลิ่น Peach</a>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title">สินค้าแนะนำ</h2>
+    <p class="section-subtitle">ขนาดมาตรฐานพร้อมส่งตรงถึงหน้าบ้านคุณ</p>
+    <div id="featured-grid" class="products-grid"></div>
+  </main>
+  
+  <footer>
+    <p>© 2026 BodyBright Soap Thailand. ปลุกความสดชื่น เผยผิวไบรท์ใสอย่างมั่นใจในทุกวันของคุณ</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const products = await loadProducts();
+      const featured = products.slice(0, 4);
+      document.getElementById('featured-grid').innerHTML = featured.map(p => `
+        <div class="product-card">
+          <div class="product-img-wrap">
+            <span class="product-badge">${p.tag}</span>
+            <span class="sku-pill">${p.sku}</span>
+            <img src="${p.image}" alt="${p.name}">
+          </div>
+          <div class="product-info">
+            <h3 class="product-title">${p.name}</h3>
+            <p class="product-desc">${p.description}</p>
+            <div class="product-footer">
+              <span class="product-price">฿${p.price}</span>
+              <button class="btn btn-primary btn-sm" onclick='addToCart(${JSON.stringify(p)})'>+ ใส่ตะกร้า</button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    });
+  </script>
+</body>
+</html>

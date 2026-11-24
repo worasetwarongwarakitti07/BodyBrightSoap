@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ขอบคุณที่สั่งซื้อ — BodyBright</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">BodyBright</a>
+      <ul class="nav-links">
+        <li><a href="index.html" >หน้าแรก</a></li>
+<li><a href="product.html" >สินค้า (SKUs)</a></li>
+<li><a href="order.html" >สั่งซื้อ <span class="cart-badge">0</span></a></li>
+<li><a href="warehouse/pick-pack.html" >แพ็ค & จ่าหน้าพัสดุ</a></li>
+<li><a href="admin.html" >หลังบ้าน (Admin)</a></li>
+
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="thankyou-box">
+      <div class="check-circle">✓</div>
+      <h1 style="font-size: 1.85rem; margin-bottom: 0.4rem;">ขอบคุณสำหรับการสั่งซื้อ!</h1>
+      <p style="color: var(--text-muted);">ระบบบันทึกข้อมูลออเดอร์และรหัส SKU เรียบร้อยแล้ว</p>
+
+      <div id="receipt-details" class="receipt-box"></div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        <a href="index.html" class="btn btn-primary">กลับสู่หน้าแรก</a>
+        <a href="warehouse/pick-pack.html" class="btn btn-dark">ดูใบหยิบสินค้า & จ่าหน้าพัสดุ</a>
+      </div>
+    </div>
+  </main>
+  
+  <footer>
+    <p>© 2026 BodyBright Soap Thailand. ปลุกความสดชื่น เผยผิวไบรท์ใสอย่างมั่นใจในทุกวันของคุณ</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const order = JSON.parse(localStorage.getItem('bb_last_order') || 'null');
+      const box = document.getElementById('receipt-details');
+      if (!order) {
+        box.innerHTML = '<p style="text-align:center;">ไม่พบข้อมูลคำสั่งซื้อล่าสุด</p>';
+        return;
+      }
+      const itemsList = order.items.map(i => `<li><code>[${i.sku}]</code> ${i.name} x ${i.qty} — ฿${i.price * i.qty}</li>`).join('');
+      box.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+          <strong>หมายเลขคำสั่งซื้อ:</strong>
+          <span style="color: var(--sport-primary); font-weight:700;">#${order.orderId}</span>
+        </div>
+        <div style="font-size:0.85rem; color: var(--text-muted); margin-bottom:0.75rem;">วันที่: ${order.date}</div>
+        <p style="font-size:0.9rem;"><strong>ผู้รับ:</strong> ${order.customer.name} (${order.customer.phone})</p>
+        <p style="font-size:0.9rem; margin-bottom:0.75rem;"><strong>ที่อยู่:</strong> ${order.customer.address}</p>
+        <p style="font-size:0.9rem; margin-bottom:0.5rem;"><strong>การชำระเงิน:</strong> ${order.customer.payment}</p>
+        <hr style="border:none; border-top:1px solid #cbd5e1; margin:0.75rem 0;">
+        <ul style="padding-left:1.2rem; font-size:0.88rem; margin-bottom:0.75rem;">${itemsList}</ul>
+        <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem;">
+          <span>ยอดรวมทั้งหมด:</span>
+          <span style="color: var(--peach-primary);">฿${order.total}</span>
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

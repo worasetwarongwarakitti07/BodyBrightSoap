@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สั่งซื้อสินค้า — BodyBright</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="logo">BodyBright</a>
+      <ul class="nav-links">
+        <li><a href="index.html" >หน้าแรก</a></li>
+<li><a href="product.html" >สินค้า (SKUs)</a></li>
+<li><a href="order.html" class="active">สั่งซื้อ <span class="cart-badge">0</span></a></li>
+<li><a href="warehouse/pick-pack.html" >แพ็ค & จ่าหน้าพัสดุ</a></li>
+<li><a href="admin.html" >หลังบ้าน (Admin)</a></li>
+
+      </ul>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1 class="section-title">สรุปรายการสั่งซื้อ</h1>
+    <p class="section-subtitle">ระบบจะบันทึกข้อมูลรหัส SKU และที่อยู่จ่าหน้าพัสดุลง Google Sheets อัตโนมัติ</p>
+
+    <div class="order-layout">
+      <div class="card-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3>ตะกร้าสินค้าของคุณ</h3>
+          <a href="product.html" style="color: var(--sport-primary); font-size: 0.9rem; font-weight: 500;">+ เลือกสินค้าเพิ่ม</a>
+        </div>
+        <div id="cart-items-container"></div>
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 2px solid #f1f5f9;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span>ค่าจัดส่ง</span>
+            <span id="shipping-cost">฿40</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700;">
+            <span>ยอดชำระสุทธิ</span>
+            <span id="total-price" style="color: var(--peach-primary);">฿0</span>
+          </div>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem;">* ส่งฟรีเมื่อสั่งซื้อครบ 300 บาทขึ้นไป</p>
+        </div>
+      </div>
+
+      <div class="card-box">
+        <h3 style="margin-bottom: 1.25rem;">ข้อมูลผู้รับสำหรับจ่าหน้าพัสดุ</h3>
+        <form id="checkout-form">
+          <div class="form-group">
+            <label>ชื่อ - นามสกุล ผู้รับ *</label>
+            <input type="text" id="cust-name" class="form-control" required placeholder="เช่น วรเศรษฐ์ วรงค์วรกิตติ">
+          </div>
+          <div class="form-group">
+            <label>เบอร์โทรศัพท์ *</label>
+            <input type="tel" id="cust-phone" class="form-control" required placeholder="08X-XXX-XXXX">
+          </div>
+          <div class="form-group">
+            <label>ที่อยู่จัดส่ง (บ้านเลขที่ / ถนน / แขวง / เขต / จังหวัด / รหัสไปรษณีย์) *</label>
+            <textarea id="cust-address" class="form-control" rows="3" required placeholder="กรอกที่อยู่สำหรับจ่าหน้ากล่องพัสดุ"></textarea>
+          </div>
+          <div class="form-group">
+            <label>ช่องทางการชำระเงิน</label>
+            <select id="cust-payment" class="form-control">
+              <option value="PromptPay QR Code">โอนเงินผ่าน PromptPay QR Code</option>
+              <option value="เก็บเงินปลายทาง (COD)">เก็บเงินปลายทาง (COD)</option>
+            </select>
+          </div>
+          <button type="submit" id="submit-btn" class="btn btn-primary" style="width: 100%; margin-top: 0.5rem;">ยืนยันการสั่งซื้อ</button>
+        </form>
+      </div>
+    </div>
+  </main>
+  
+  <footer>
+    <p>© 2026 BodyBright Soap Thailand. ปลุกความสดชื่น เผยผิวไบรท์ใสอย่างมั่นใจในทุกวันของคุณ</p>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    function renderCart() {
+      const cart = getCart();
+      const container = document.getElementById('cart-items-container');
+      const totalEl = document.getElementById('total-price');
+      const shippingEl = document.getElementById('shipping-cost');
+
+      if (cart.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color: var(--text-muted); padding: 2rem 0;">ยังไม่มีสินค้าในตะกร้า <br><a href="product.html" class="btn btn-outline btn-sm" style="margin-top:1rem;">ไปเลือกซื้อสบู่</a></p>`;
+        shippingEl.textContent = '฿0';
+        totalEl.textContent = '฿0';
+        return;
+      }
+
+      let subtotal = 0;
+      container.innerHTML = cart.map((item, idx) => {
+        subtotal += item.price * item.qty;
+        return `
+          <div class="cart-item">
+            <img src="${item.image}" alt="${item.name}" style="width: 56px; height: 56px; border-radius: 10px; object-fit: cover;">
+            <div class="cart-item-info">
+              <div style="font-size: 0.75rem; font-family: monospace; color: var(--sport-primary); font-weight: 700;">SKU: ${item.sku}</div>
+              <div style="font-weight: 600; font-size: 0.95rem;">${item.name}</div>
+              <div style="color: var(--text-muted); font-size: 0.85rem;">฿${item.price} / ชิ้น</div>
+            </div>
+            <div class="qty-controls">
+              <button class="qty-btn" onclick="changeQty(${idx}, -1)">-</button>
+              <span style="min-width: 20px; text-align: center; font-weight: 600;">${item.qty}</span>
+              <button class="qty-btn" onclick="changeQty(${idx}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const shipping = subtotal >= 300 ? 0 : 40;
+      shippingEl.textContent = shipping === 0 ? 'ฟรี' : `฿${shipping}`;
+      totalEl.textContent = `฿${subtotal + shipping}`;
+    }
+
+    function changeQty(index, delta) {
+      const cart = getCart();
+      cart[index].qty += delta;
+      if (cart[index].qty <= 0) cart.splice(index, 1);
+      saveCart(cart);
+      renderCart();
+    }
+
+    document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cart = getCart();
+      if (cart.length === 0) {
+        alert('กรุณาเลือกสินค้าลงตะกร้าก่อนสั่งซื้อครับ');
+        return;
+      }
+
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'กำลังบันทึกคำสั่งซื้อ...';
+
+      const subtotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+      const shipping = subtotal >= 300 ? 0 : 40;
+
+      const order = {
+        orderId: 'BB-' + Date.now().toString().slice(-6),
+        date: new Date().toLocaleString('th-TH'),
+        customer: {
+          name: document.getElementById('cust-name').value.trim(),
+          phone: document.getElementById('cust-phone').value.trim(),
+          address: document.getElementById('cust-address').value.trim(),
+          payment: document.getElementById('cust-payment').value
+        },
+        items: cart,
+        subtotal: subtotal,
+        shipping: shipping,
+        total: subtotal + shipping,
+        status: 'รอดำเนินการ'
+      };
+
+      await saveOrder(order);
+      saveCart([]);
+      window.location.href = 'thankyou.html';
+    });
+
+    document.addEventListener('DOMContentLoaded', renderCart);
+  </script>
+</body>
+</html>
