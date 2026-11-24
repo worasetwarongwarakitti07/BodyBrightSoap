@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบหยิบสินค้า แพ็ค และจ่าหน้าพัสดุ — BodyBright Warehouse</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="../index.html" class="logo">BodyBright</a>
+      <ul class="nav-links">
+        <li><a href="../index.html" >หน้าแรก</a></li>
+<li><a href="../product.html" >สินค้า (SKUs)</a></li>
+<li><a href="../order.html" >สั่งซื้อ <span class="cart-badge">0</span></a></li>
+<li><a href="../warehouse/pick-pack.html" class="active">แพ็ค & จ่าหน้าพัสดุ</a></li>
+<li><a href="../admin.html" >หลังบ้าน (Admin)</a></li>
+
+      </ul>
+    </div>
+  </nav>
+
+
+  <main class="container">
+    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 1.75rem;">ใบหยิบสินค้า แพ็ค และจ่าหน้าพัสดุ (Pick & Pack)</h1>
+        <p style="color: var(--text-muted);">แตกเซตสินค้าเป็นจำนวนสบู่จริงแยกกลิ่น/ขนาด พร้อมใบปะหน้าพัสดุสำหรับพิมพ์แปะกล่อง</p>
+      </div>
+      <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <button class="btn btn-outline btn-sm" onclick="refreshFromSheet()">ดึงข้อมูลล่าสุดจาก Google Sheet</button>
+        <button class="btn btn-primary btn-sm" onclick="window.print()">พิมพ์ใบจ่าหน้าพัสดุทั้งหมด</button>
+      </div>
+    </div>
+
+    <!-- Total Pick Summary -->
+    <div class="card-box no-print" style="margin-bottom: 2rem; border-left: 5px solid var(--sport-primary);">
+      <h3 style="margin-bottom: 0.75rem;">สรุปจำนวนสบู่ที่ต้องเบิกจากชั้นวาง (สำหรับออเดอร์ที่รอดำเนินการทั้งหมด)</h3>
+      <div id="batch-pick-summary" style="display: flex; gap: 1rem; flex-wrap: wrap;"></div>
+    </div>
+
+    <!-- Shipping Labels + Individual Pick Lists -->
+    <div id="shipping-slips-container" class="pack-grid"></div>
+  </main>
+
+  
+  <footer>
+    <p>© 2026 BodyBright Soap Thailand. ปลุกความสดชื่น เผยผิวไบรท์ใสอย่างมั่นใจในทุกวันของคุณ</p>
+  </footer>
+
+
+  <script src="../js/app.js"></script>
+  <script>
+    function renderPickAndPack() {
+      const orders = getOrders();
+      const pendingOrders = orders.filter(o => o.status !== 'จัดส่งสำเร็จ');
+      const summaryBox = document.getElementById('batch-pick-summary');
+      const container = document.getElementById('shipping-slips-container');
+
+      if (pendingOrders.length === 0) {
+        summaryBox.innerHTML = '<span style="color: var(--text-muted);">ไม่มีออเดอร์ค้างจัดส่งในขณะนี้</span>';
+        container.innerHTML = '<div class="card-box" style="grid-column: 1/-1; text-align:center; padding: 3rem;">ไม่มีรายการที่ต้องแพ็ค สามารถทดลองสั่งซื้อจากหน้าเว็บ หรือกดจำลองออเดอร์ในหน้า Admin ได้ครับ</div>';
+        return;
+      }
+
+      // Aggregate all physical bars needed across pending orders
+      const totalBars = {};
+      pendingOrders.forEach(o => {
+        const pickItems = calculatePickList(o.items);
+        pickItems.forEach(p => {
+          if (!totalBars[p.base_sku]) totalBars[p.base_sku] = { ...p, qty: 0 };
+          totalBars[p.base_sku].qty += p.qty;
+        });
+      });
+
+      summaryBox.innerHTML = Object.values(totalBars).map(b => `
+        <div style="background: #f1f5f9; padding: 0.75rem 1.25rem; border-radius: 10px;">
+          <div style="font-size: 0.75rem; font-family: monospace; color: var(--text-muted);">${b.base_sku}</div>
+          <div style="font-weight: 700; font-size: 1.05rem;">${b.label}: <span style="color: var(--peach-primary);">${b.qty} ก้อน</span></div>
+        </div>
+      `).join('');
+
+      // Render individual shipping label + checklist per order
+      container.innerHTML = pendingOrders.map(o => {
+        const pickItems = calculatePickList(o.items);
+        const skuOrdered = o.items.map(i => `<code>${i.sku}</code> x${i.qty}`).join(', ');
+        const checklistHtml = pickItems.map(p => `
+          <li>
+            <input type="checkbox" style="width:16px; height:16px;">
+            <span><strong>${p.label}</strong> (${p.base_sku}) — จำนวน <strong>${p.qty} ก้อน</strong></span>
+          </li>
+        `).join('');
+
+        const codBadge = o.customer.payment.includes('COD')
+          ? `<div style="background:#fee2e2; color:#b91c1c; font-weight:700; padding:0.3rem 0.6rem; border-radius:6px; font-size:0.85rem; margin-top:0.5rem;">เก็บเงินปลายทาง (COD): ฿${o.total}</div>`
+          : `<div style="background:#dcfce7; color:#15803d; font-weight:600; padding:0.25rem 0.6rem; border-radius:6px; font-size:0.8rem; margin-top:0.5rem;">ชำระเงินแล้ว (${o.customer.payment})</div>`;
+
+        return `
+          <div class="shipping-slip">
+            <div class="slip-header">
+              <div>
+                <strong style="font-size: 1.15rem;">BodyBright</strong>
+                <div style="font-size: 0.75rem; color: #475569;">ผู้ส่ง: ร้าน BodyBright Thailand</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; font-size: 1rem;">#${o.orderId}</div>
+                <div style="font-size: 0.72rem;">${o.date}</div>
+              </div>
+            </div>
+
+            <div class="slip-box">
+              <div style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-bottom: 0.25rem;">กรุณาส่ง (ผู้รับ):</div>
+              <div style="font-size: 1.05rem; font-weight: 700;">คุณ${o.customer.name}</div>
+              <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem;">โทร: ${o.customer.phone}</div>
+              <div style="font-size: 0.9rem; line-height: 1.45;">${o.customer.address}</div>
+              ${codBadge}
+            </div>
+
+            <div class="pick-checklist">
+              <div style="font-size: 0.8rem; font-weight: 700; margin-bottom: 0.35rem;">
+                รายการหยิบแพ็ค (SKU ที่สั่ง: ${skuOrdered})
+              </div>
+              <ul>${checklistHtml}</ul>
+            </div>
+
+            <div class="no-print" style="margin-top: 0.85rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">สถานะ: ${o.status}</span>
+              <button class="btn btn-sport btn-sm" onclick="markAsPacked('${o.orderId}')">แพ็คเสร็จแล้ว / กำลังจัดส่ง</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function markAsPacked(orderId) {
+      const orders = getOrders();
+      const target = orders.find(o => o.orderId === orderId);
+      if (target) {
+        target.status = 'กำลังจัดส่ง';
+        localStorage.setItem('bb_orders', JSON.stringify(orders));
+        const apiUrl = getSheetApiUrl();
+        if (apiUrl) {
+          fetch(apiUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'updateStatus', orderId: orderId, status: 'กำลังจัดส่ง' })
+          });
+        }
+        showToast(`อัปเดตออเดอร์ #${orderId} เป็น "กำลังจัดส่ง"`);
+        renderPickAndPack();
+      }
+    }
+
+    async function refreshFromSheet() {
+      const synced = await syncOrdersFromGoogleSheet();
+      if (synced) {
+        renderPickAndPack();
+        showToast('ซิงก์ข้อมูลจาก Google Sheet เรียบร้อย');
+      } else {
+        alert('กรุณาตั้งค่า Google Apps Script Web App URL ในหน้า Admin ก่อนครับ');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderPickAndPack);
+  </script>
+</body>
+</html>
